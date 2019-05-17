@@ -1,0 +1,184 @@
+<script type="text/javascript">
+	var pg,
+		mineField = [],
+		startField,
+		fieldW = 10,
+		fieldH = 10,
+		mineCount = 15,
+		isStarted = false,
+		isOver = false,
+		fontColors = ["", "black", "green", "red", "orange", "purple", "tomato", "blue", "brown"];
+	window.onload = () => {
+		pg = document.getElementById("playground");
+		for (let i=0; i<fieldW; i++){
+			mineField.push([]);
+			for (let j=0; j<fieldH; j++) {
+				mineField[i].push(0);
+			}
+		}
+
+		drawField();
+	}
+
+	window.onclick = () => {
+		var cell = event.target,
+			cIdx = getIdx(cell);
+		if (cell.parentNode.className != "row" || cell.className == "flag" || isOver) return false;
+
+		if (!isStarted) {
+			startField = +cIdx.x * fieldW + +cIdx.y;
+			initPG();
+			emptyChecked(+cIdx.x, +cIdx.y);
+			isStarted = true;
+		}
+
+		if (mineField[+cIdx.x][+cIdx.y] == 9) {
+			isOver = true;
+			cell.style.backgroundColor = "red";
+			for (let i=0; i<fieldW; i++){
+				for (let j=0; j<fieldH; j++) {
+					if (mineField[i][j] == 9)
+						pg.children[i].children[j].className = "mine";
+				}
+			}
+		} else {
+			emptyChecked(+cIdx.x, +cIdx.y);
+		}
+	}
+
+	window.oncontextmenu = () => {
+		var cell = event.target,
+			cIdx = getIdx(cell);
+		if (cell.parentNode.className != "row") return false;
+
+		if (cell.className != "open" && cell.className != "mine") {
+			cell.className = (cell.className == "cell") ? "flag" : "cell";
+
+		}
+
+		return false;
+	}
+
+	function initPG() {
+		minePlace();
+		console.log("Game is started")
+	}
+
+	function drawField() {
+		for (let i=0; i<fieldW; i++){
+			var row = document.createElement("div");
+			row.style.width = (fieldW*56) + "px";
+			row.className = "row";
+			for (let j=0; j<fieldW; j++) {
+				var cell = document.createElement("div");
+				cell.setAttribute("row", i);
+				cell.setAttribute("col", j);
+
+				cell.className = "cell";
+
+				row.appendChild(cell);
+			}
+
+			pg.appendChild(row);
+		}
+	}
+
+	function minePlace() {
+		var arr = new Set();
+
+		while (mineCount) {
+			var inSize  = arr.size
+			while (inSize == arr.size) {
+				var rnd = getRandomInt(0,fieldW*fieldH);
+				if (startField != rnd) {
+					arr.add(rnd);
+				}
+			}
+			
+			mineCount--;
+		}
+
+		for (let i=0; i<fieldW; i++){
+			for (let j=0; j<fieldH; j++) {
+				if (arr.has(i*fieldW + j)) {
+					mineField[i][j] = 9;
+					for (let n=i-1; n<=i+1; n++)
+						for (let m=j-1; m<=j+1; m++) {
+							if (n>=fieldW || m>=fieldH || n<0 || m<0) continue;
+							if (mineField[n][m] != 9)
+								mineField[n][m]++;
+						}
+				}
+			}
+		}
+	}
+
+	function emptyChecked(x,y) {
+		if (x<0 || y<0 || x>=fieldW || y>=fieldH) {return false;}
+		var cell = pg.children[x].children[y];
+		
+		if (cell.className == "cell") {
+			if (mineField[x][y] == 0) {
+				cell.className = "open";
+			} else if (mineField[x][y] != 9) {
+				cell.className = "open";
+				cell.innerText = mineField[x][y];
+				cell.style.color = fontColors[mineField[x][y]];
+			}
+
+			if (cell.innerText) {return false};
+
+			if (x > 0)      emptyChecked(x-1, y);
+			if (x < fieldW) emptyChecked(x+1, y);
+			if (y > 0)      emptyChecked(x, y-1);
+			if (x < fieldH) emptyChecked(x, y+1);
+		}
+	}
+
+	function getIdx(elem) {
+		return {"x": elem.getAttribute("row"), "y": elem.getAttribute("col")}
+	}
+	function getRandomInt(min, max) {
+		return Math.floor(Math.random() * (max - min)) + min;
+	}
+</script>
+<style type="text/css">
+	* {
+		user-select: none;
+	}
+	#playground div.cell,
+	#playground div.mine,
+	#playground div.flag,
+	#playground div.open {
+		width: 50px;
+		height: 50px;
+		background-size: 100%;
+		border: solid 1px grey;
+		margin: 2px;
+		float: left;
+		font: bold 40px Courier;
+		text-align: center;
+		line-height: 50px;
+	}
+	.cell {
+		background: url(cell.png);
+	}
+	.mine {
+		background: url(mine.png);
+	}
+	.flag {
+		background: url(flag.png);
+	}
+	.open {
+		background: url(cellOpen.png);
+	}
+	.cell:active {
+		background: url(cellRev.png);
+	}
+</style>
+<body>
+	<nav></nav>
+	<div id="playground">
+	</div>
+	
+</body>
